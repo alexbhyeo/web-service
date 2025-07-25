@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login with Microsoft</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        .login-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 350px;
+            text-align: center;
+        }
+        
+        .logo {
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background-color: #106ebe;
+        }
+        
+        .divider {
+            margin: 25px 0;
+            color: #999;
+            display: flex;
+            align-items: center;
+        }
+        
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .divider::before {
+            margin-right: 10px;
+        }
+        
+        .divider::after {
+            margin-left: 10px;
+        }
+        
+        .microsoft-btn {
+            background-color: white;
+            color: #5E5E5E;
+            border: 1px solid #8C8C8C;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .microsoft-btn:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .microsoft-icon {
+            margin-right: 10px;
+            height: 20px;
+        }
+        
+        .error-message {
+            color: #d83b01;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <!-- Replace with your logo -->
+            <h2>My App</h2>
+        </div>
+        
+        <h1>Sign in to your account</h1>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <button type="submit">Sign in</button>
+        </form>
+        
+        <div class="divider">or</div>
+        
+        <button id="microsoftLogin" class="microsoft-btn">
+            <img src="https://learn.microsoft.com/en-us/azure/active-directory/develop/media/howto-add-branding-in-apps/ms-symbollockup_mssymbol_19.png" 
+                 alt="Microsoft logo" class="microsoft-icon">
+            Sign in with Microsoft
+        </button>
+        
+        <div id="errorMessage" class="error-message"></div>
+    </div>
+
+    <!-- MSAL.js library -->
+    <script src="https://alcdn.msauth.net/browser/2.24.0/js/msal-browser.min.js"></script>
+    
+    <script>
+        // MSAL configuration
+        const msalConfig = {
+            auth: {
+                clientId: "YOUR_CLIENT_ID", // Replace with your Azure AD app client ID
+                authority: "https://login.microsoftonline.com/YOUR_TENANT_ID", // Replace with your tenant ID
+                redirectUri: window.location.origin // Or your specific redirect URI
+            },
+            cache: {
+                cacheLocation: "sessionStorage", // Configures cache location
+                storeAuthStateInCookie: false // Set to true if you have issues on IE11 or Edge
+            }
+        };
+
+        // Initialize MSAL application
+        const msalInstance = new msal.PublicClientApplication(msalConfig);
+
+        // Login request configuration
+        const loginRequest = {
+            scopes: ["openid", "profile", "User.Read"] // These permissions allow basic profile access
+        };
+
+        // Handle Microsoft login button click
+        document.getElementById("microsoftLogin").addEventListener("click", async function() {
+            try {
+                const authResult = await msalInstance.loginPopup(loginRequest);
+                
+                // Successful login - you can access user info from authResult
+                console.log("Login successful", authResult);
+                
+                // Get user info
+                const user = authResult.account;
+                alert(`Welcome ${user.name}! You're now signed in with Microsoft.`);
+                
+                // Here you would typically redirect to your app or make an API call
+                // to your backend with the token for verification
+                
+            } catch (error) {
+                console.error("Login error:", error);
+                document.getElementById("errorMessage").textContent = 
+                    "Failed to sign in with Microsoft. Please try again.";
+            }
+        });
+
+        // Handle regular form login (optional)
+        document.getElementById("loginForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+            // Your regular login logic here
+            alert("Regular login would be processed here");
+        });
+
+        // Optional: Check for redirect response (if using redirect instead of popup)
+        msalInstance.handleRedirectPromise()
+            .then((response) => {
+                if (response) {
+                    console.log("Redirect response received", response);
+                    const user = response.account;
+                    alert(`Welcome back ${user.name}!`);
+                }
+            })
+            .catch((error) => {
+                console.error("Redirect error:", error);
+            });
+    </script>
+</body>
+</html>
